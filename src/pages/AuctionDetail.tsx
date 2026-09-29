@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { auctions, bids } from '../data/auctions';
 import CountdownTimer from '../components/CountdownTimer';
@@ -43,11 +43,52 @@ export default function AuctionDetail() {
     );
   }
 
+  const [dbBids, setDbBids] = useState<any[]>([]);
   const s = sym[auction.currency];
-  const auctionBids = bids.filter(b => b.auctionId === auction.id);
   const isVehicle = ['cars', 'motorcycles', 'commercial_vehicles'].includes(auction.category);
   const isProperty = ['houses', 'commercial_buildings', 'land'].includes(auction.category);
   const watched = isWatched(auction.id);
+
+  useEffect(() => {
+    if (!auction) return;
+
+    const fetchBids = async () => {
+      const { data } = await supabase
+        .from('bids')
+        .select(`
+          id,
+          amount,
+          created_at,
+          user_id
+        `)
+        .eq('auction_id', auction.id)
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        setDbBids(data);
+        if (data.length > 0) {
+          setCurrentBid(Math.max(auction.currentBid, data[0].amount));
+          setBidCount(auction.bidCount + data.length);
+        }
+      }
+    };
+
+    fetchBids();
+
+    const subscription = supabase
+      .channel('public:bids')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bids', filter: `auction_id=eq.${auction.id}` }, payload => {
+        const newBid = payload.new;
+        setDbBids(prev => [newBid, ...prev]);
+        setCurrentBid(newBid.amount);
+        setBidCount(c => c + 1);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [auction?.id]);
 
   const handleBid = (amount: number) => {
     setCurrentBid(amount);
@@ -256,7 +297,7 @@ export default function AuctionDetail() {
       {/* Bid History */}
       <div className="mt-10 max-w-lg">
         <h2 className="font-semibold text-[var(--foreground)] mb-4">Bid History</h2>
-        {auctionBids.length === 0 ? (
+        {dbBids.length === 0 ? (
           <p className="text-sm text-[var(--muted-foreground)]">No bids yet. Be the first to bid.</p>
         ) : (
           <div className="border border-[var(--border)] rounded-[var(--radius-lg)] overflow-hidden">
@@ -269,11 +310,11 @@ export default function AuctionDetail() {
                 </tr>
               </thead>
               <tbody>
-                {auctionBids.map((bid, i) => (
+                {dbBids.map((bid, i) => (
                   <tr key={bid.id} className={i % 2 === 0 ? 'bg-[var(--card)]' : 'bg-[var(--background)]'}>
-                    <td className="px-4 py-3 text-[var(--foreground)]">{bid.bidderLabel}</td>
+                    <td className="px-4 py-3 text-[var(--foreground)] truncate max-w-[120px]">{bid.user_id.split('-')[0]}...</td>
                     <td className="px-4 py-3 text-right font-mono font-semibold text-[var(--foreground)]">{s}{bid.amount.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-right text-[var(--muted-foreground)]">{timeAgo(bid.time)}</td>
+                    <td className="px-4 py-3 text-right text-[var(--muted-foreground)]">{timeAgo(new Date(bid.created_at))}</td>
                   </tr>
                 ))}
               </tbody>

@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Props {
   auction: {
+    id: string;
     title: string;
     currentBid: number;
     currency: 'USD' | 'EUR' | 'GBP';
@@ -14,17 +17,44 @@ interface Props {
 const sym = { USD: '$', EUR: '€', GBP: '£' };
 
 export default function BidModal({ auction, onClose, onBid }: Props) {
+  const { user } = useAuth();
   const minBid = auction.currentBid + 500;
   const [amount, setAmount] = useState(minBid);
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const s = sym[auction.currency];
 
   const presets = [minBid, minBid + 500, minBid + 1500];
 
-  const handleSubmit = () => {
-    if (amount < minBid) return;
-    setSubmitted(true);
-    onBid(amount);
+  const handleSubmit = async () => {
+    if (amount < minBid || !user) return;
+    setLoading(true);
+
+    try {
+      // 1. Insert Bid
+      const { error: bidErr } = await supabase.from('bids').insert({
+        auction_id: auction.id,
+        user_id: user.id,
+        amount
+      });
+      if (bidErr) throw bidErr;
+
+      // 2. Update Auction's current bid
+      const { error: auctionErr } = await supabase
+        .from('auctions')
+        .update({ current_bid: amount })
+        .eq('id', auction.id);
+      
+      if (auctionErr) throw auctionErr;
+
+      setSubmitted(true);
+      onBid(amount);
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to place bid: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -102,10 +132,10 @@ export default function BidModal({ auction, onClose, onBid }: Props) {
 
             <button
               onClick={handleSubmit}
-              disabled={amount < minBid}
+              disabled={amount < minBid || loading}
               className="w-full py-3.5 bg-[var(--accent)] text-white font-semibold rounded-[var(--radius)] hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Place Bid — {s}{amount.toLocaleString()}
+              {loading ? 'Processing...' : `Place Bid — ${s}${amount.toLocaleString()}`}
             </button>
           </div>
         )}
