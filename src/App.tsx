@@ -8,14 +8,11 @@ import Auctions from './pages/Auctions';
 import AuctionDetail from './pages/AuctionDetail';
 import Watchlist from './pages/Watchlist';
 import Sell from './pages/Sell';
-import HowItWorks from './pages/HowItWorks';
 import { AccountLayout, AccountOverview, AccountBids, AccountWon, AccountPayments, AccountProfile, AccountSettings } from './pages/Account';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminAuctions from './pages/admin/AdminAuctions';
 import AdminCreateAuction from './pages/admin/AdminCreateAuction';
-import { AdminBids, AdminUsers, AdminSellers, AdminDocuments, AdminPayments, AdminSettings } from './pages/admin/AdminOther';
 
 export default function App() {
   return (
@@ -30,8 +27,6 @@ export default function App() {
             <Route path="/auctions/:id" element={<Layout><AuctionDetail /></Layout>} />
             <Route path="/watchlist" element={<Layout><Watchlist /></Layout>} />
             <Route path="/sell" element={<Layout><Sell /></Layout>} />
-            <Route path="/how-it-works" element={<Layout><HowItWorks /></Layout>} />
-            <Route path="/about" element={<Layout><HowItWorks /></Layout>} />
 
             {/* Account routes */}
             <Route path="/account" element={<Layout><AccountLayout /></Layout>}>
@@ -48,14 +43,7 @@ export default function App() {
             <Route path="/adminsite" element={<AdminLogin />} />
             <Route path="/adminsite/*" element={<AdminLayout />}>
               <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="auctions" element={<AdminAuctions />} />
               <Route path="auctions/create" element={<AdminCreateAuction />} />
-              <Route path="bids" element={<AdminBids />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="sellers" element={<AdminSellers />} />
-              <Route path="documents" element={<AdminDocuments />} />
-              <Route path="payments" element={<AdminPayments />} />
-              <Route path="settings" element={<AdminSettings />} />
               <Route index element={<Navigate to="/adminsite/dashboard" replace />} />
             </Route>
 
