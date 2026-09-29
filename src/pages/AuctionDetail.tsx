@@ -4,6 +4,10 @@ import { auctions, bids } from '../data/auctions';
 import CountdownTimer from '../components/CountdownTimer';
 import BidModal from '../components/BidModal';
 import { useWatchlist } from '../contexts/WatchlistContext';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import AuthModal from '../components/AuthModal';
+import RegistrationModal from '../components/RegistrationModal';
 
 const sym = { USD: '$', EUR: '€', GBP: '£' };
 
@@ -22,9 +26,12 @@ export default function AuctionDetail() {
   const auction = auctions.find(a => a.id === id);
   const [imgIdx, setImgIdx] = useState(0);
   const [bidModal, setBidModal] = useState(false);
+  const [authModal, setAuthModal] = useState(false);
+  const [regModal, setRegModal] = useState(false);
   const [currentBid, setCurrentBid] = useState(auction?.currentBid ?? 0);
   const [bidCount, setBidCount] = useState(auction?.bidCount ?? 0);
   const { toggle, isWatched } = useWatchlist();
+  const { user } = useAuth();
 
   if (!auction) {
     return (
@@ -45,6 +52,30 @@ export default function AuctionDetail() {
   const handleBid = (amount: number) => {
     setCurrentBid(amount);
     setBidCount(c => c + 1);
+  };
+
+  const handlePlaceBidClick = async () => {
+    if (!user) {
+      setAuthModal(true);
+      return;
+    }
+
+    // Check registration status
+    const { data, error } = await supabase
+      .from('auction_registrations')
+      .select('*')
+      .eq('auction_id', auction.id)
+      .eq('user_id', user.id)
+      .eq('payment_status', 'completed')
+      .maybeSingle();
+
+    if (error || !data) {
+      // Need to register
+      setRegModal(true);
+    } else {
+      // Already registered, open bid modal
+      setBidModal(true);
+    }
   };
 
   return (
@@ -137,7 +168,7 @@ export default function AuctionDetail() {
             </div>
 
             <button
-              onClick={() => setBidModal(true)}
+              onClick={handlePlaceBidClick}
               className="w-full py-3.5 bg-[var(--accent)] text-white font-semibold rounded-[var(--radius)] hover:opacity-90 transition-opacity text-base mb-2"
             >
               Place Bid
@@ -259,7 +290,7 @@ export default function AuctionDetail() {
             <p className="font-mono font-bold text-lg text-[var(--foreground)]">{s}{currentBid.toLocaleString()}</p>
           </div>
           <button
-            onClick={() => setBidModal(true)}
+            onClick={handlePlaceBidClick}
             className="px-6 py-3 bg-[var(--accent)] text-white font-semibold rounded-[var(--radius)] hover:opacity-90 transition-opacity"
           >
             Place Bid
@@ -274,6 +305,19 @@ export default function AuctionDetail() {
           onBid={handleBid}
         />
       )}
+
+      <AuthModal isOpen={authModal} onClose={() => setAuthModal(false)} />
+      
+      <RegistrationModal 
+        isOpen={regModal} 
+        onClose={() => setRegModal(false)} 
+        onSuccess={() => {
+          setRegModal(false);
+          setBidModal(true);
+        }} 
+        auctionId={auction.id} 
+        startingBid={auction.startingBid} 
+      />
     </div>
   );
 }

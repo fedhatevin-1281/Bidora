@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { WatchlistProvider } from './contexts/WatchlistContext';
+import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Auctions from './pages/Auctions';
@@ -20,9 +21,10 @@ export default function App() {
   return (
     <ThemeProvider>
       <WatchlistProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public routes */}
             <Route path="/" element={<Layout><Home /></Layout>} />
             <Route path="/auctions" element={<Layout><Auctions /></Layout>} />
             <Route path="/auctions/:id" element={<Layout><AuctionDetail /></Layout>} />
@@ -64,8 +66,9 @@ export default function App() {
                 <a href="/" className="px-5 py-2.5 bg-[var(--primary)] text-[var(--primary-foreground)] rounded-[var(--radius)] text-sm font-medium">Go Home</a>
               </div>
             </Layout>} />
-          </Routes>
-        </BrowserRouter>
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
       </WatchlistProvider>
     </ThemeProvider>
   );

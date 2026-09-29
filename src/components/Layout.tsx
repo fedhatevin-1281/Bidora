@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
+import AuthModal from './AuthModal';
 
 function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
@@ -47,7 +49,9 @@ const navLinks = [
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 bg-[var(--background)]/95 backdrop-blur-sm border-b border-[var(--border)]">
@@ -90,12 +94,25 @@ export function Header() {
 
             {/* Desktop auth */}
             <div className="hidden lg:flex items-center gap-2">
-              <Link to="/account" className="px-4 py-2 text-sm text-[var(--foreground)] hover:text-[var(--accent)] transition-colors">
-                Sign In
-              </Link>
-              <Link to="/account" className="px-4 py-2 text-sm font-medium bg-[var(--primary)] text-[var(--primary-foreground)] rounded-[var(--radius)] hover:opacity-90 transition-opacity">
-                Create Account
-              </Link>
+              {user ? (
+                <>
+                  <Link to="/account" className="px-4 py-2 text-sm text-[var(--foreground)] hover:text-[var(--accent)] transition-colors">
+                    My Account
+                  </Link>
+                  <button onClick={signOut} className="px-4 py-2 text-sm font-medium bg-[var(--primary)] text-[var(--primary-foreground)] rounded-[var(--radius)] hover:opacity-90 transition-opacity">
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setAuthOpen(true)} className="px-4 py-2 text-sm text-[var(--foreground)] hover:text-[var(--accent)] transition-colors">
+                    Sign In
+                  </button>
+                  <button onClick={() => setAuthOpen(true)} className="px-4 py-2 text-sm font-medium bg-[var(--primary)] text-[var(--primary-foreground)] rounded-[var(--radius)] hover:opacity-90 transition-opacity">
+                    Create Account
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Mobile menu */}
@@ -147,15 +164,30 @@ export function Header() {
               ))}
             </nav>
             <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-[var(--border)]">
-              <Link to="/account" onClick={() => setMenuOpen(false)} className="px-4 py-2.5 text-sm text-center border border-[var(--border)] rounded-[var(--radius)] text-[var(--foreground)]">
-                Sign In
-              </Link>
-              <Link to="/account" onClick={() => setMenuOpen(false)} className="px-4 py-2.5 text-sm text-center font-medium bg-[var(--primary)] text-[var(--primary-foreground)] rounded-[var(--radius)]">
-                Create Account
-              </Link>
+              {user ? (
+                <>
+                  <Link to="/account" onClick={() => setMenuOpen(false)} className="px-4 py-2.5 text-sm text-center border border-[var(--border)] rounded-[var(--radius)] text-[var(--foreground)]">
+                    My Account
+                  </Link>
+                  <button onClick={() => { signOut(); setMenuOpen(false); }} className="px-4 py-2.5 text-sm text-center font-medium bg-[var(--primary)] text-[var(--primary-foreground)] rounded-[var(--radius)]">
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => { setAuthOpen(true); setMenuOpen(false); }} className="px-4 py-2.5 text-sm text-center border border-[var(--border)] rounded-[var(--radius)] text-[var(--foreground)]">
+                    Sign In
+                  </button>
+                  <button onClick={() => { setAuthOpen(true); setMenuOpen(false); }} className="px-4 py-2.5 text-sm text-center font-medium bg-[var(--primary)] text-[var(--primary-foreground)] rounded-[var(--radius)]">
+                    Create Account
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
+        
+        <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
       </div>
     </header>
   );

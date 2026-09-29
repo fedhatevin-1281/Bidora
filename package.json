@@ -10,8 +10,10 @@
     "format": "oxfmt"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-paystack": "^6.0.0",
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
